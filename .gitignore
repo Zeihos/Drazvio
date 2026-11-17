@@ -1,22 +1,21 @@
-# Runtime credentials and personal player data
-/server/server.cfg
-/server/scriptfiles/players/
-/server/scriptfiles/accounts/
-/server/scriptfiles/banlist/
-/server/scriptfiles/bantime/
-/server/scriptfiles/gangs/
-/server/scriptfiles/businesses/
-/server/scriptfiles/houses/
-/server/scriptfiles/data/*.ini
-/server/scriptfiles/logs/
-/server/scriptfiles/*.db
-/server/scriptfiles/*.sqlite3
+# Keep only reviewed static scriptfiles in source control.
+# Any new runtime directory or INI needs a conscious exception.
+/server/scriptfiles/*
+!/server/scriptfiles/CarSpawn/
+!/server/scriptfiles/data/
+/server/scriptfiles/CarSpawn/*
+!/server/scriptfiles/CarSpawn/*.txt
+/server/scriptfiles/data/*
+!/server/scriptfiles/data/*.ini.example
 
-# Generated artifacts and temporary backups
+# Private server settings, player data and files created at runtime.
+/server/server.cfg
 /server/gamemodes/*.amx
 /server/filterscripts/gatesys2.amx
 /server/filterscripts/reklama.amx
 /server/plugins/FileFunctions.dll
+
+# Build outputs and temporary files.
 /build-amx/
 /dist/
 /backups/
@@ -30,6 +29,8 @@
 *.swapold
 *.part
 *.tmp
+*.db
+*.sqlite3
 __pycache__/
 *.pyc
 .DS_Store
