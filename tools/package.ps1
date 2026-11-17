@@ -21,6 +21,12 @@ try {
     $plugin = Join-Path $build 'FileFunctions.compat.EXPERIMENTAL.dll'
     if (!(Test-Path $plugin)) { throw 'Missing FileFunctions CI artifact' }
     Copy-Item -LiteralPath $plugin -Destination (Join-Path $stage 'plugins/FileFunctions.dll') -Force
+    $data = Join-Path $stage 'scriptfiles/data'
+    foreach ($template in Get-ChildItem -LiteralPath $data -Filter '*.ini.example' -File) {
+        $dest = $template.FullName.Substring(0, $template.FullName.Length - 8)
+        if (!(Test-Path $dest)) { Copy-Item -LiteralPath $template.FullName -Destination $dest }
+        Remove-Item -LiteralPath $template.FullName -Force
+    }
     if (Test-Path (Join-Path $stage 'server.cfg')) { throw 'Private server.cfg found in test package' }
     foreach ($name in @('samp-server.exe','samp-license.txt','server.cfg.example',
         'gamemodes/mod05.amx','plugins/FileFunctions.dll','plugins/sscanf.dll','plugins/streamer.dll')) {

@@ -85,7 +85,12 @@ def init(root: Path):
         raise RuntimeError('Template must contain one password placeholder')
     password = secrets.token_urlsafe(32)
     target.write_text(raw.replace(PLACEHOLDER, password), encoding='utf-8')
-    print('Created private server.cfg; RCON password is not printed.')
+    data_dir = root / 'scriptfiles' / 'data'
+    for template in data_dir.glob('*.ini.example'):
+        destination = template.with_suffix('')
+        if not destination.exists():
+            destination.write_bytes(template.read_bytes())
+    print('Created private server.cfg and missing initial data files; existing data was preserved.')
 
 
 def main():

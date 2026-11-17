@@ -24,6 +24,11 @@ try {
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_gatesys2.amx') -Destination (Join-Path $server 'filterscripts\gatesys2.amx') -Force
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_reklama.amx') -Destination (Join-Path $server 'filterscripts\reklama.amx') -Force
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\FileFunctions.compat.EXPERIMENTAL.dll') -Destination (Join-Path $server 'plugins\FileFunctions.dll') -Force
+    $data = Join-Path $server 'scriptfiles/data'
+    foreach ($template in Get-ChildItem -LiteralPath $data -Filter '*.ini.example' -File) {
+        $dest = $template.FullName.Substring(0, $template.FullName.Length - 8)
+        if (!(Test-Path $dest)) { Copy-Item -LiteralPath $template.FullName -Destination $dest }
+    }
     $config = @(
         'echo DRAZVIO full server CI smoke test',
         'hostname DRAZVIO - CI only',
