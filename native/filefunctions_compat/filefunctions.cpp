@@ -3,6 +3,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <cstdio>
+#include <cerrno>
+#include <io.h>
+#include <fcntl.h>
 #include <cstdint>
 #include <string>
 #include <unordered_set>
@@ -77,7 +80,26 @@ static cell AMX_NATIVE_CALL n_open(AMX *amx, cell *p) {
     else if (!file_path(a,path)) return 0;
     const char *modes[]={"rb","wb","ab","r+b","w+b","a+b"};
     FILE *f=nullptr;
-    if (fopen_s(&f,path.c_str(),modes[p[2]])!=0||!f) return 0;
+    // The SA-MP server holds server_log.txt open. Ask Win32 to share the
+    // existing writer instead of using only the CRT's default open flags.
+    if (a=="server_log.txt" && p[2]==0) {
+        HANDLE raw=CreateFileA(path.c_str(), GENERIC_READ,
+            FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (raw!=INVALID_HANDLE_VALUE) {
+            int fd=_open_osfhandle(reinterpret_cast<intptr_t>(raw),_O_RDONLY|_O_BINARY);
+            if (fd>=0) {
+                f=_fdopen(fd,"rb");
+                if (!f) _close(fd);
+            } else CloseHandle(raw);
+        }
+    }
+    if (!f && (fopen_s(&f,path.c_str(),modes[p[2]])!=0||!f)) {
+        if (a=="server_log.txt") {
+            printf("[DRAZVIO FF] Cannot open server_log.txt for shared reading (errno=%d, winerr=%lu)\n",errno,GetLastError());
+        }
+        return 0;
+    }
     g_files.insert(f);
     return static_cast<cell>(reinterpret_cast<uintptr_t>(f));
 }
