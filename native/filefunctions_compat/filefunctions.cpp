@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 #include "plugincommon.h"
+#define HAVE_STDINT_H 1
 #include "amx/amx.h"
 
 static void **g_amx = nullptr;
