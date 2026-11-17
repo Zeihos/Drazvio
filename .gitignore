@@ -1,0 +1,36 @@
+# Runtime credentials and personal player data
+/server/server.cfg
+/server/scriptfiles/players/
+/server/scriptfiles/accounts/
+/server/scriptfiles/banlist/
+/server/scriptfiles/bantime/
+/server/scriptfiles/gangs/
+/server/scriptfiles/businesses/
+/server/scriptfiles/houses/
+/server/scriptfiles/data/*.ini
+/server/scriptfiles/logs/
+/server/scriptfiles/*.db
+/server/scriptfiles/*.sqlite3
+
+# Generated artifacts and temporary backups
+/server/gamemodes/*.amx
+/server/filterscripts/gatesys2.amx
+/server/filterscripts/reklama.amx
+/server/plugins/FileFunctions.dll
+/build-amx/
+/dist/
+/backups/
+/*.zip
+*.log
+*.bak
+*.backup
+*.before_build
+*.savenew
+*.regnew
+*.swapold
+*.part
+*.tmp
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

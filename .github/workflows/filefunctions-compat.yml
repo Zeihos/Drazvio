@@ -1,0 +1,46 @@
+name: FileFunctions compatibility (experimental)
+on:
+  push:
+    paths:
+      - 'native/filefunctions_compat/**'
+      - 'server/**'
+      - 'tools/**'
+      - '.github/workflows/filefunctions-compat.yml'
+  pull_request:
+    paths:
+      - 'native/filefunctions_compat/**'
+      - 'server/**'
+      - 'tools/**'
+      - '.github/workflows/filefunctions-compat.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build x86 native plugin
+        shell: pwsh
+        run: ./native/filefunctions_compat/build.ps1
+      - name: Run SA-MP 0.3.7 smoke test
+        shell: pwsh
+        run: ./native/filefunctions_compat/smoke.ps1
+      - name: Full Stage 11 server startup smoke test
+        shell: pwsh
+        run: ./native/filefunctions_compat/full-smoke.ps1
+      - name: Package test server
+        shell: pwsh
+        run: ./tools/package.ps1
+      - name: Upload clean test server
+        uses: actions/upload-artifact@v4
+        with:
+          name: DRAZVIO-SERVER-TEST
+          path: build-amx/DRAZVIO-SERVER-TEST.zip
+          if-no-files-found: error
+      - name: Upload experimental DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileFunctions-compat-EXPERIMENTAL
+          path: build-amx/FileFunctions.compat.EXPERIMENTAL.dll
+          if-no-files-found: error

@@ -1,0 +1,33 @@
+name: Pawn build
+on:
+  push:
+    paths:
+      - 'server/gamemodes/**'
+      - 'server/filterscripts/**'
+      - 'server/pawno/**'
+      - 'server/plugins/**'
+      - 'server/server.cfg.example'
+      - 'tools/**'
+      - '.github/workflows/pawn-build.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight source tree
+        run: python tools/drazvio.py check
+      - name: Verify repository cleanliness
+        run: python tools/repository_audit.py
+      - name: Compile gamemode and patched filterscripts
+        shell: pwsh
+        run: ./tools/build.ps1
+      - name: Upload compiled AMX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drazvio-amx
+          path: build-amx/*.amx
+          if-no-files-found: error
