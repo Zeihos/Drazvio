@@ -26,4 +26,11 @@ $ascii = [System.Text.Encoding]::ASCII.GetString($bytes).ToUpperInvariant()
 foreach ($bad in @('MSVCR100D.DLL','VCRUNTIME140D.DLL','UCRTBASED.DLL','MSVCP140D.DLL')) {
     if ($ascii.Contains($bad)) { throw "Debug CRT import: $bad" }
 }
-Write-Host 'EXPERIMENTAL DLL compiled; no automatic installation. Runtime compatibility still unverified.'
+$testExe = Join-Path $outDir 'FileFunctions.compat.selftest.exe'
+$testSrc = Join-Path $PSScriptRoot 'selftest.cpp'
+$testCmd = 'call "' + $vcvars + '" >nul && cl /nologo /std:c++17 /O2 /EHsc /MT /W4 /I "' + $sdk + '" /Fe:"' + $testExe + '" "' + $testSrc + '"'
+cmd.exe /d /s /c $testCmd
+if ($LASTEXITCODE -ne 0 -or !(Test-Path $testExe)) { throw 'Native self-test compilation failed' }
+& $testExe $dll
+if ($LASTEXITCODE -ne 0) { throw 'Native plugin self-test failed' }
+Write-Host 'EXPERIMENTAL DLL passed ABI/filesystem self-tests; no automatic installation. Full SA-MP runtime compatibility still unverified.'
