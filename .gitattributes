@@ -1,0 +1,14 @@
+# Preserve legacy Pawn/include encoding and original line endings.
+# Some files use Windows-1251; automatic Git text conversion is unsafe.
+server/**/*.pwn -text -diff
+server/pawno/include/*.inc -text -diff
+
+# Compiled binaries and artwork should never be converted to text.
+*.amx binary
+*.dll binary
+*.exe binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.zip binary

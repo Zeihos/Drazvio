@@ -7,8 +7,22 @@ import sys
 def main():
     tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode("utf-8").split("\0")
     problems = []
+    allowed_static = {
+        "server/scriptfiles/CarSpawn/" + car + ".txt"
+        for car in (
+            "2dvernie", "4dvernie", "bikes", "funcars", "furgons", "gonochnie",
+            "goscars", "gruzcars", "jeeps", "lodki", "lowriders", "moshnie",
+            "paid", "racecars", "radiocars", "transcars", "vozdcars",
+        )
+    }
+    allowed_static |= {
+        "server/scriptfiles/data/" + name + ".ini.example"
+        for name in ("cash", "cortime", "keyscan", "line", "openip", "servcon")
+    }
     for name in filter(None, tracked):
         path = PurePosixPath(name)
+        if name.startswith("server/scriptfiles/") and name not in allowed_static:
+            problems.append("Unexpected runtime file tracked: " + name)
         if name.startswith(("Мод/", "Оформление/")):
             problems.append("Old directory: "+name)
         if name.startswith((
