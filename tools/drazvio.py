@@ -79,18 +79,27 @@ def init(root: Path):
     target = root / 'server.cfg'
     template = root / 'server.cfg.example'
     if target.exists():
-        raise RuntimeError('server.cfg already exists; refusing to overwrite it')
-    raw = template.read_text(encoding='utf-8')
-    if raw.count(PLACEHOLDER) != 1:
-        raise RuntimeError('Template must contain one password placeholder')
-    password = secrets.token_urlsafe(32)
-    target.write_text(raw.replace(PLACEHOLDER, password), encoding='utf-8')
+        print('Existing private server.cfg preserved.')
+    else:
+        raw = template.read_text(encoding='utf-8')
+        if raw.count(PLACEHOLDER) != 1:
+            raise RuntimeError('Template must contain one password placeholder')
+        password = secrets.token_urlsafe(32)
+        # Exclusive creation refuses overwrites even if a second process raced us.
+        with target.open('x', encoding='utf-8', newline='\n') as output:
+            output.write(raw.replace(PLACEHOLDER, password))
+        print('Created private server.cfg (RCON password not displayed).')
     data_dir = root / 'scriptfiles' / 'data'
-    for template in data_dir.glob('*.ini.example'):
-        destination = template.with_suffix('')
-        if not destination.exists():
-            destination.write_bytes(template.read_bytes())
-    print('Created private server.cfg and missing initial data files; existing data was preserved.')
+    made = 0
+    for sample in sorted(data_dir.glob('*.ini.example')):
+        destination = sample.with_suffix('')
+        try:
+            with destination.open('xb') as output:
+                output.write(sample.read_bytes())
+                made += 1
+        except FileExistsError:
+            continue
+    print(f'Initialized {made} missing INI files; existing game data preserved.')
 
 
 def main():

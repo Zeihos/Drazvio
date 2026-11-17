@@ -20,6 +20,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test setup and packaging safeguards
+        run: python -m unittest discover -s tests -v
       - name: Build x86 native plugin
         shell: pwsh
         run: ./native/filefunctions_compat/build.ps1
@@ -32,6 +34,8 @@ jobs:
       - name: Package test server
         shell: pwsh
         run: ./tools/package.ps1
+      - name: Verify clean archive has no private data
+        run: python tools/verify_package.py build-amx/DRAZVIO-SERVER-TEST.zip
       - name: Upload clean test server
         uses: actions/upload-artifact@v4
         with:
