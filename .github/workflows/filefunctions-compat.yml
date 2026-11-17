@@ -22,6 +22,9 @@ jobs:
       - name: Run SA-MP 0.3.7 smoke test
         shell: pwsh
         run: ./native/filefunctions_compat/smoke.ps1
+      - name: Full Stage 11 server startup smoke test
+        shell: pwsh
+        run: ./native/filefunctions_compat/full-smoke.ps1
       - name: Upload experimental DLL
         uses: actions/upload-artifact@v4
         with:
