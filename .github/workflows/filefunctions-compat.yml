@@ -31,9 +31,6 @@ jobs:
       - name: Full Stage 11 server startup smoke test
         shell: pwsh
         run: ./native/filefunctions_compat/full-smoke.ps1
-      - name: Package test server
-        shell: pwsh
-        run: ./tools/package.ps1
       - name: Verify clean archive has no private data
         run: python tools/verify_package.py build-amx/DRAZVIO-SERVER-TEST.zip
       - name: Upload clean test server

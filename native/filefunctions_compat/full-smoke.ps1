@@ -15,20 +15,17 @@ if ($actual -ne $expected) { throw 'VC++ 2010 x86 redist hash does not match pin
 $p = Start-Process -FilePath $vc2010 -ArgumentList '/Q /NORESTART' -Wait -PassThru
 if ($p.ExitCode -notin @(0,3010)) { throw "VC++ 2010 x86 redist install failed: $($p.ExitCode)" }
 Write-Host 'Installed verified Microsoft VC++ 2010 x86 runtime for isolated CI test.'
+# Package and validate the exact ZIP users will download, then launch FROM it.
+& (Join-Path $root 'tools/package.ps1')
+$zipPath = Join-Path $root 'build-amx/DRAZVIO-SERVER-TEST.zip'
+if (!(Test-Path -LiteralPath $zipPath -PathType Leaf)) { throw 'Missing packaged test ZIP' }
+& python (Join-Path $root 'tools/verify_package.py') $zipPath
+if ($LASTEXITCODE -ne 0) { throw 'Test ZIP validation failed' }
 $base = Join-Path $env:RUNNER_TEMP ('drazvio_full_smoke_' + [Guid]::NewGuid().ToString('N'))
 $server = Join-Path $base 'server'
 New-Item -ItemType Directory -Force -Path $base | Out-Null
 try {
-    Copy-Item -LiteralPath (Join-Path $root 'server') -Destination $server -Recurse
-    Copy-Item -LiteralPath (Join-Path $root 'build-amx\gamemodes_mod05.amx') -Destination (Join-Path $server 'gamemodes\mod05.amx') -Force
-    Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_gatesys2.amx') -Destination (Join-Path $server 'filterscripts\gatesys2.amx') -Force
-    Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_reklama.amx') -Destination (Join-Path $server 'filterscripts\reklama.amx') -Force
-    Copy-Item -LiteralPath (Join-Path $root 'build-amx\FileFunctions.compat.EXPERIMENTAL.dll') -Destination (Join-Path $server 'plugins\FileFunctions.dll') -Force
-    $data = Join-Path $server 'scriptfiles/data'
-    foreach ($template in Get-ChildItem -LiteralPath $data -Filter '*.ini.example' -File) {
-        $dest = $template.FullName.Substring(0, $template.FullName.Length - 8)
-        if (!(Test-Path $dest)) { Copy-Item -LiteralPath $template.FullName -Destination $dest }
-    }
+    Expand-Archive -LiteralPath $zipPath -DestinationPath $server -Force
     $config = @(
         'echo DRAZVIO full server CI smoke test',
         'hostname DRAZVIO - CI only',
@@ -68,7 +65,7 @@ try {
     if ($output -notmatch 'Number of vehicle models:') {
         throw 'GameModeInit did not reach server startup completion'
     }
-    Write-Host 'PASS: full DRAZVIO Stage 11 starts with 3 plugins and 11 filterscripts.'
+    Write-Host 'PASS: downloadable DRAZVIO test ZIP boots with 3 plugins and 11 filterscripts.'
 }
 finally {
     Remove-Item -LiteralPath $base -Force -Recurse -ErrorAction SilentlyContinue
