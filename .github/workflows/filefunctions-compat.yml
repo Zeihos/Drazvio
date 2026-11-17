@@ -19,6 +19,9 @@ jobs:
       - name: Build x86 native plugin
         shell: pwsh
         run: ./native/filefunctions_compat/build.ps1
+      - name: Run SA-MP 0.3.7 smoke test
+        shell: pwsh
+        run: ./native/filefunctions_compat/smoke.ps1
       - name: Upload experimental DLL
         uses: actions/upload-artifact@v4
         with:
