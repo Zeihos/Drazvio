@@ -115,7 +115,27 @@ int main(int argc,char **argv) {
     if(find_native("fileRemove")(&fakeAMX,removeArgs)!=1) return 21;
     cell deleteLog[]={sizeof(cell),256};
     if(find_native("fileRemove")(&fakeAMX,deleteLog)!=1) return 22;
-    amxunload(&fakeAMX);unload();FreeLibrary(dll);
-    puts("PASS: plugin exports, natives, moves, overwrite protection, traversal, file I/O");
+    // Reject reserved Win32 devices, normalized-away suffixes and log writes.
+    setstr(768,"players/NUL.ini");
+    cell badOpen[]={2*sizeof(cell),768,1};
+    if(find_native("fileOpen")(&fakeAMX,badOpen)!=0) {puts("FAIL: NUL device accepted");return 23;}
+    setstr(768,"players/COM1.txt");
+    if(find_native("fileOpen")(&fakeAMX,badOpen)!=0) {puts("FAIL: COM1 device accepted");return 24;}
+    setstr(768,"players/unsafe.");
+    if(find_native("fileOpen")(&fakeAMX,badOpen)!=0) {puts("FAIL: trailing dot accepted");return 25;}
+    setstr(768,"server_log.txt");
+    if(find_native("fileOpen")(&fakeAMX,badOpen)!=0) {puts("FAIL: server_log write accepted");return 26;}
+    setstr(768,"players/DZ_CI_HANDLE_LEAK.log");
+    const char *leak="scriptfiles/players/DZ_CI_HANDLE_LEAK.log";
+    if(file_exists(leak)) {puts("FAIL: leaked handle test file occupied");return 27;}
+    cell leaked=find_native("fileOpen")(&fakeAMX,badOpen);
+    if(leaked==0) {puts("FAIL: cannot open temporary handle");return 28;}
+    amxunload(&fakeAMX);
+    cell closeLeaked[]={sizeof(cell),leaked};
+    if(find_native("fileClose")(&fakeAMX,closeLeaked)!=0) {puts("FAIL: leaked handle survived AMX unload");return 29;}
+    if(!DeleteFileA(leak)) {puts("FAIL: leaked handle still locks file");return 30;}
+    unload();FreeLibrary(dll);
+
+    puts("PASS: exports, filesystem, reserved names, log read-only and AMX handle cleanup");
     return 0;
 }

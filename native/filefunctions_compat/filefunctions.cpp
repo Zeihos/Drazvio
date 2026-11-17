@@ -8,14 +8,14 @@
 #include <fcntl.h>
 #include <cstdint>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include "plugincommon.h"
 #define HAVE_STDINT_H 1
 #include "amx/amx.h"
 
 static void **g_amx = nullptr;
-static std::unordered_set<FILE *> g_files;
+static std::unordered_map<FILE *, AMX *> g_files;
 template <typename T> static T api(int index) {
     return reinterpret_cast<T>(g_amx[index]);
 }
@@ -39,15 +39,35 @@ static bool pawn_write(AMX *amx, cell arg, const char *text, size_t maxlen) {
 }
 // Inputs are scriptfiles-relative exactly as the native Pawn file API expects.
 // Refuse absolute paths, drive paths and .. components.
+static bool safe_component(const std::string &part) {
+    if (part.empty() || part=="." || part==".." || part.back()=='.' || part.back()==' ')
+        return false;
+    if (part.find_first_of("<>:\"|?*\r\n\t")!=std::string::npos) return false;
+    // Win32 treats these DOS device names as special files, even when a
+    // suffix (e.g. NUL.ini or CON.txt) follows. Never open them as accounts.
+    const auto dot=part.find('.');
+    std::string stem=part.substr(0,dot);
+    for (char &c: stem) {
+        if (c>='a' && c<='z') c=static_cast<char>(c-'a'+'A');
+    }
+    if (stem=="CON"||stem=="PRN"||stem=="AUX"||stem=="NUL"||stem=="CLOCK$")
+        return false;
+    if (stem.size()==4 && stem[3]>='1' && stem[3]<='9') {
+        if (stem.substr(0,3)=="COM" || stem.substr(0,3)=="LPT")
+            return false;
+    }
+    return true;
+}
 static bool file_path(std::string raw, std::string &result) {
-    if (raw.empty() || raw.size() > 240 || raw[0] == '\\' || raw[0] == '/' ||
-        raw.find(':') != std::string::npos) return false;
-    for (char &c: raw) if (c == '\\') c = '/';
+    if (raw.empty() || raw.size()>240 || raw[0]=='\\' || raw[0]=='/' ||
+        raw.find(':')!=std::string::npos) return false;
+    for (char &c:raw) if (c=='\\') c='/';
     size_t start=0;
     for (;;) {
-        size_t end=raw.find('/',start);
-        std::string part=raw.substr(start,end==std::string::npos?end:end-start);
-        if (part.empty() || part=="." || part=="..") return false;
+        const size_t end=raw.find('/',start);
+        const std::string part=raw.substr(start,end==std::string::npos?
+            std::string::npos:end-start);
+        if (!safe_component(part)) return false;
         if (end==std::string::npos) break;
         start=end+1;
     }
@@ -56,7 +76,7 @@ static bool file_path(std::string raw, std::string &result) {
 }
 static FILE *get_handle(cell value) {
     FILE *f=reinterpret_cast<FILE *>(static_cast<uintptr_t>(static_cast<uint32_t>(value)));
-    return g_files.count(f)?f:nullptr;
+    return g_files.find(f)!=g_files.end()?f:nullptr;
 }
 static cell AMX_NATIVE_CALL n_move(AMX *amx, cell *p) {
     if (!count(p,2)) return 0;
@@ -76,7 +96,11 @@ static cell AMX_NATIVE_CALL n_open(AMX *amx, cell *p) {
     if (!count(p,2)||p[2]<0||p[2]>=6) return 0;
     std::string a,path;
     if (!pawn_read(amx,p[1],a)) return 0;
-    if (a=="server_log.txt") path=a;
+    if (a=="server_log.txt") {
+        // The log is readable for diagnostics, never writable via Pawn.
+        if (p[2]!=0) return 0;
+        path=a;
+    }
     else if (!file_path(a,path)) return 0;
     const char *modes[]={"rb","wb","ab","r+b","w+b","a+b"};
     FILE *f=nullptr;
@@ -100,7 +124,7 @@ static cell AMX_NATIVE_CALL n_open(AMX *amx, cell *p) {
         }
         return 0;
     }
-    g_files.insert(f);
+    g_files.emplace(f,amx);
     return static_cast<cell>(reinterpret_cast<uintptr_t>(f));
 }
 static cell AMX_NATIVE_CALL n_close(AMX *, cell *p) {
@@ -138,7 +162,7 @@ extern "C" bool __stdcall Load(void **data) {
     return true;
 }
 extern "C" void __stdcall Unload() {
-    for (FILE *f: g_files) fclose(f);
+    for (const auto &entry: g_files) fclose(entry.first);
     g_files.clear();
 }
 extern "C" int __stdcall AmxLoad(AMX *amx) {
@@ -146,4 +170,14 @@ extern "C" int __stdcall AmxLoad(AMX *amx) {
     return api<int (AMXAPI *)(AMX *, const AMX_NATIVE_INFO *, int)>(
         PLUGIN_AMX_EXPORT_Register)(amx,natives,-1);
 }
-extern "C" int __stdcall AmxUnload(AMX *) { return 0; }
+extern "C" int __stdcall AmxUnload(AMX *amx) {
+    // Filterscripts can reload independently of the server process.
+    // Close their abandoned handles so they cannot lock account files.
+    for (auto it=g_files.begin();it!=g_files.end();) {
+        if (it->second==amx) {
+            fclose(it->first);
+            it=g_files.erase(it);
+        } else ++it;
+    }
+    return 0;
+}
