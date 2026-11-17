@@ -19,7 +19,7 @@ $base = Join-Path $env:RUNNER_TEMP ('drazvio_full_smoke_' + [Guid]::NewGuid().To
 $server = Join-Path $base 'server'
 New-Item -ItemType Directory -Force -Path $base | Out-Null
 try {
-    Copy-Item -LiteralPath (Join-Path $root 'Мод') -Destination $server -Recurse
+    Copy-Item -LiteralPath (Join-Path $root 'server') -Destination $server -Recurse
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\gamemodes_mod05.amx') -Destination (Join-Path $server 'gamemodes\mod05.amx') -Force
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_gatesys2.amx') -Destination (Join-Path $server 'filterscripts\gatesys2.amx') -Force
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\filterscripts_reklama.amx') -Destination (Join-Path $server 'filterscripts\reklama.amx') -Force

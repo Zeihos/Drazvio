@@ -1,21 +1,36 @@
-# Runtime credentials and player records
-/Мод/server.cfg
-/Мод/scriptfiles/players/
-/Мод/scriptfiles/banlist/
-/Мод/scriptfiles/bantime/
-/Мод/scriptfiles/gangs/players/
-/Мод/scriptfiles/gangs/idgn/
-/Мод/scriptfiles/data/cash.ini
+# Runtime credentials and personal player data
+/server/server.cfg
+/server/scriptfiles/players/
+/server/scriptfiles/accounts/
+/server/scriptfiles/banlist/
+/server/scriptfiles/bantime/
+/server/scriptfiles/gangs/
+/server/scriptfiles/businesses/
+/server/scriptfiles/houses/
+/server/scriptfiles/data/*.ini
+/server/scriptfiles/logs/
+/server/scriptfiles/*.db
+/server/scriptfiles/*.sqlite3
 
-# Compiler outputs and logs
+# Generated artifacts and temporary backups
+/server/gamemodes/*.amx
+/server/filterscripts/gatesys2.amx
+/server/filterscripts/reklama.amx
+/server/plugins/FileFunctions.dll
 /build-amx/
+/dist/
+/backups/
+/*.zip
 *.log
-*.before_build
+*.bak
 *.backup
+*.before_build
 *.savenew
 *.regnew
 *.swapold
-*.bak
 *.part
+*.tmp
 __pycache__/
 *.pyc
+.DS_Store
+Thumbs.db

@@ -2,11 +2,11 @@ name: Pawn build
 on:
   push:
     paths:
-      - 'Мод/gamemodes/**'
-      - 'Мод/filterscripts/**'
-      - 'Мод/pawno/**'
-      - 'Мод/plugins/**'
-      - 'Мод/server.cfg.example'
+      - 'server/gamemodes/**'
+      - 'server/filterscripts/**'
+      - 'server/pawno/**'
+      - 'server/plugins/**'
+      - 'server/server.cfg.example'
       - 'tools/**'
       - '.github/workflows/pawn-build.yml'
   pull_request:
@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Preflight source tree
         run: python tools/drazvio.py check
+      - name: Verify repository cleanliness
+        run: python tools/repository_audit.py
       - name: Compile gamemode and patched filterscripts
         shell: pwsh
         run: ./tools/build.ps1

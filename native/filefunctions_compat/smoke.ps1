@@ -5,7 +5,7 @@ $pawn = Join-Path $target 'pawn'
 $server = Join-Path $target 'server'
 New-Item -ItemType Directory -Force -Path $pawn, (Join-Path $server 'gamemodes'), (Join-Path $server 'plugins'), (Join-Path $server 'scriptfiles') | Out-Null
 try {
-    $originalPawn = Join-Path $root 'Мод\pawno'
+    $originalPawn = Join-Path $root 'server\pawno'
     foreach ($filename in @('pawncc.exe','pawnc.dll','libpawnc.dll')) {
         $file = Join-Path $originalPawn $filename
         if (Test-Path $file) { Copy-Item -LiteralPath $file -Destination (Join-Path $pawn $filename) }
@@ -15,7 +15,7 @@ try {
     $source = Join-Path $PSScriptRoot 'smoke.pwn'
     & (Join-Path $pawn 'pawncc.exe') $source "-i$(Join-Path $pawn 'include')" "-o$amx" '-d2'
     if ($LASTEXITCODE -ne 0 -or !(Test-Path $amx)) { throw 'Cannot compile SA-MP smoke gamemode' }
-    Copy-Item -LiteralPath (Join-Path $root 'Мод\samp-server.exe') -Destination (Join-Path $server 'samp-server.exe')
+    Copy-Item -LiteralPath (Join-Path $root 'server\samp-server.exe') -Destination (Join-Path $server 'samp-server.exe')
     Copy-Item -LiteralPath (Join-Path $root 'build-amx\FileFunctions.compat.EXPERIMENTAL.dll') -Destination (Join-Path $server 'plugins\FileFunctions.dll')
     $config = @(
         'echo DRAZVIO CI smoke test',

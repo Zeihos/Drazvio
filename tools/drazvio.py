@@ -30,7 +30,9 @@ def audit(root: Path, deploy: bool) -> int:
     required = [root / 'gamemodes/mod05.pwn', root / 'pawno/pawncc.exe',
                 root / 'pawno/include/a_samp.inc']
     required += [root / 'filterscripts' / (name + '.pwn') for name in SCRIPTS]
-    required += [root / 'plugins' / (name + '.dll') for name in PLUGINS]
+    required += [root / 'plugins' / (name + '.dll') for name in ('sscanf','streamer')]
+    required += [root / 'filterscripts' / (name + '.amx') for name in SCRIPTS if name not in ('gatesys2', 'reklama')]
+    required += [root / 'samp-server.exe',root / 'samp-license.txt']
     for file in required:
         if not file.is_file() or file.stat().st_size == 0:
             problems.append(f'Missing or empty: {file.relative_to(root)}')
@@ -54,12 +56,16 @@ def audit(root: Path, deploy: bool) -> int:
         if cfg.get('announce') == '1' and not deploy:
             warnings.append('Template announces server publicly; use announce 0 before tests')
     ff = root / 'plugins/FileFunctions.dll'
+    if deploy and not ff.is_file():
+        problems.append('FileFunctions.dll missing; download the tested CI artifact first')
     if ff.is_file():
         binary = ff.read_bytes().upper()
         if b'MSVCR100D.DLL' in binary:
             msg = ('FileFunctions.dll imports MSVCR100D.dll (Visual C++ DEBUG runtime); '
                    'replace with a release-built, compatible DLL before deployment')
             (problems if deploy else warnings).append(msg)
+    if not deploy and not ff.is_file():
+        warnings.append('FileFunctions.dll is compiled by GitHub Actions; not tracked in source')
     for issue in warnings:
         print('WARNING:', issue)
     for issue in problems:
@@ -85,7 +91,7 @@ def init(root: Path):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('action', choices=['check', 'init'])
-    p.add_argument('--root', default='Мод')
+    p.add_argument('--root', default='server')
     p.add_argument('--deploy', action='store_true', help='Validate real server.cfg and fail on debug CRT')
     args = p.parse_args()
     root = Path(args.root).resolve()

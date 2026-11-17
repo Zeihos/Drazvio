@@ -1,7 +1,7 @@
 param([switch]$Install)
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$server = Join-Path $root 'Мод'
+$server = Join-Path $root 'server'
 $outputDir = Join-Path $root 'build-amx'
 $targets = @('gamemodes/mod05', 'filterscripts/gatesys2', 'filterscripts/reklama')
 
