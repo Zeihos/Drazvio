@@ -62,6 +62,71 @@ public OnGameModeInit()
         print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: log write permitted");
         SetTimer("DrazvioSmokeExit",200,false); return 1;
     }
+    // Exercise the failure/rollback half of Stage 10 account publishing.
+    // These are disposable scriptfiles, never real player accounts.
+    new File:seed = fopen("DZ_CI_ROLLBACK.ini", io_write);
+    if(!seed)
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback seed");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    fwrite(seed, "Money=12");
+    fclose(seed);
+    new File:staging = fopen("DZ_CI_ROLLBACK.savenew", io_write);
+    if(!staging)
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback stage");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    fwrite(staging, "Money=99");
+    fclose(staging);
+    if(!fileMove("DZ_CI_ROLLBACK.ini", "DZ_CI_ROLLBACK.swapold"))
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback park");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    // An unexpected destination appeared before the stage could be published.
+    new File:blocker = fopen("DZ_CI_ROLLBACK.ini", io_write);
+    if(!blocker)
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback collision");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    fwrite(blocker, "COLLISION");
+    fclose(blocker);
+    if(fileMove("DZ_CI_ROLLBACK.savenew", "DZ_CI_ROLLBACK.ini"))
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback overwrite accepted");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    if(!fexist("DZ_CI_ROLLBACK.savenew") ||
+       !fileRemove("DZ_CI_ROLLBACK.ini") ||
+       !fileMove("DZ_CI_ROLLBACK.swapold", "DZ_CI_ROLLBACK.ini"))
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback restoration");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    new File:restored = fileOpen("DZ_CI_ROLLBACK.ini", io_Read);
+    new restoredLine[64];
+    if(!restored)
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback open");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    if(!fileRead(restored, restoredLine, sizeof(restoredLine)) ||
+       strfind(restoredLine, "Money=12") != 0)
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: restored balance mismatch");
+        fileClose(restored);
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
+    fileClose(restored);
+    if(!fileRemove("DZ_CI_ROLLBACK.ini") ||
+       !fileRemove("DZ_CI_ROLLBACK.savenew"))
+    {
+        print("DRAZVIO_FILEFUNCTIONS_SMOKE_FAIL: rollback cleanup");
+        SetTimer("DrazvioSmokeExit",200,false); return 1;
+    }
     print("DRAZVIO_FILEFUNCTIONS_SMOKE_PASS");
     SetTimer("DrazvioSmokeExit",200,false);
     return 1;
