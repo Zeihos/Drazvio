@@ -1,0 +1,36 @@
+name: Apply verified one-line Pawn fix (temporary)
+on:
+  push:
+    branches:
+      - fix/pawn-busroute-timer-return
+    paths:
+      - 'tools/patch_busroute.py'
+      - '.github/workflows/patch-busroute-temporary.yml'
+permissions:
+  contents: write
+jobs:
+  update-source:
+    if: github.repository == 'Zeihos/Drazvio'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply strictly verified byte patch
+        run: python3 tools/patch_busroute.py
+      - name: Upload resulting source for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: DRAZVIO-mod05-busroute-fixed
+          path: server/gamemodes/mod05.pwn
+          retention-days: 3
+      - name: Commit source to dedicated branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f server/gamemodes/mod05.pwn
+          if git diff --cached --quiet; then
+            echo "Already patched"
+            exit 0
+          fi
+          git commit -m "fix(pawn): return a value from busroutestoptimer"
+          git push origin HEAD:refs/heads/fix/pawn-busroute-timer-return
