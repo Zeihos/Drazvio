@@ -19145,6 +19145,7 @@ public busroutestoptimer(playerid)
 	        TogglePlayerControllable(playerid, 1);
 	    }
 	}
+	return 1;
 }
 //==============================================================================
 //                              GarHouse
