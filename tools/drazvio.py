@@ -75,9 +75,24 @@ def audit(root: Path, deploy: bool) -> int:
             problems.append('gamemode0 must load mod05')
         if cfg.get('plugins', '').split() != list(PLUGINS):
             problems.append('Plugin list must match FileFunctions sscanf streamer')
-        missing = [name for name in SCRIPTS if name not in cfg.get('filterscripts', '').split()]
+        listed_scripts = cfg.get('filterscripts', '').split()
+        missing = [name for name in SCRIPTS if name not in listed_scripts]
         if missing:
             problems.append('Unlisted filterscripts: ' + ', '.join(missing))
+        unexpected = [name for name in listed_scripts if name not in SCRIPTS]
+        if unexpected:
+            problems.append('Unexpected filterscripts: ' + ', '.join(unexpected))
+        duplicates = sorted({name for name in listed_scripts if listed_scripts.count(name) > 1})
+        if duplicates:
+            problems.append('Duplicate filterscripts: ' + ', '.join(duplicates))
+        # Invalid network settings cause confusing startup failures or unexpected exposure.
+        for key, minimum, maximum in (('port', 1, 65535), ('maxplayers', 1, 1000)):
+            value = cfg.get(key, '')
+            if not value.isascii() or not value.isdecimal() or not minimum <= int(value) <= maximum:
+                problems.append(f'{key} must be an integer from {minimum} to {maximum}')
+        for key in ('announce', 'query', 'lanmode', 'rcon'):
+            if cfg.get(key) not in ('0', '1'):
+                problems.append(f'{key} must be 0 or 1')
         if cfg.get('rcon') != '0':
             warnings.append('RCON is not disabled (rcon 0 is recommended during testing)')
         password = cfg.get('rcon_password', '')

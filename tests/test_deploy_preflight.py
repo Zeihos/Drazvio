@@ -28,6 +28,10 @@ class DeployedServerAuditTests(unittest.TestCase):
             "rcon 0\n"
             "rcon_password " + "x" * 32 + "\n"
             "announce 0\n"
+            "query 0\n"
+            "lanmode 1\n"
+            "port 17778\n"
+            "maxplayers 10\n"
         ).encode("utf-8"))
 
     def _file(self, name, content=b"test"):
@@ -112,6 +116,48 @@ class DeployedServerAuditTests(unittest.TestCase):
                           .replace("gamemode0 ", "gamemode0\t"), encoding="utf-8")
         result, log = self.check()
         self.assertEqual(result, 0, log)
+
+    def test_rejects_duplicate_filterscript(self):
+        cfg = self.root / "server.cfg"
+        cfg.write_text(cfg.read_text().replace("filterscripts ", "filterscripts BonusSys ", 1))
+        status, log = self.check()
+        self.assertEqual(status, 1)
+        self.assertIn("Duplicate filterscripts: BonusSys", log)
+
+    def test_rejects_unknown_filterscript(self):
+        cfg = self.root / "server.cfg"
+        cfg.write_text(cfg.read_text().replace("filterscripts ", "filterscripts UnknownScript ", 1))
+        status, log = self.check()
+        self.assertEqual(status, 1)
+        self.assertIn("Unexpected filterscripts: UnknownScript", log)
+
+    def test_rejects_invalid_port(self):
+        cfg = self.root / "server.cfg"
+        cfg.write_text(cfg.read_text().replace("port 17778", "port 65536"))
+        status, log = self.check()
+        self.assertEqual(status, 1)
+        self.assertIn("port must be an integer", log)
+
+    def test_rejects_excessive_maxplayers(self):
+        cfg = self.root / "server.cfg"
+        cfg.write_text(cfg.read_text().replace("maxplayers 10", "maxplayers 50000"))
+        status, log = self.check()
+        self.assertEqual(status, 1)
+        self.assertIn("maxplayers must be an integer", log)
+
+    def test_rejects_invalid_query_flag(self):
+        cfg = self.root / "server.cfg"
+        cfg.write_text(cfg.read_text().replace("query 0", "query yes"))
+        status, log = self.check()
+        self.assertEqual(status, 1)
+        self.assertIn("query must be 0 or 1", log)
+
+    def test_accepts_reordered_unique_filterscripts(self):
+        cfg = self.root / "server.cfg"
+        listed = " ".join(SCRIPTS)
+        cfg.write_text(cfg.read_text().replace(listed, " ".join(reversed(SCRIPTS))))
+        status, log = self.check()
+        self.assertEqual(status, 0, log)
 
     def test_template_password_is_error(self):
         config = self.root / "server.cfg"
