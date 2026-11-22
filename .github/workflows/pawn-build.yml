@@ -8,6 +8,7 @@ on:
       - 'server/plugins/**'
       - 'server/server.cfg.example'
       - 'tools/**'
+      - 'tests/**'
       - '.github/workflows/pawn-build.yml'
   pull_request:
   workflow_dispatch:
