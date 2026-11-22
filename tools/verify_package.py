@@ -45,7 +45,7 @@ def validate_x86_pe(data: bytes, name: str) -> None:
     # Offset may be malicious: check bounds before accessing any header fields.
     if offset < 0x40 or offset + 26 > len(data):
         raise ValueError(f"{name}: truncated Windows PE header")
-    if data[offset:offset + 4] != b"PE\\x00\\x00":
+    if data[offset:offset + 4] != b"PE\x00\x00":
         raise ValueError(f"{name}: invalid Windows PE signature")
     machine = struct.unpack_from("<H", data, offset + 4)[0]
     magic = struct.unpack_from("<H", data, offset + 24)[0]
