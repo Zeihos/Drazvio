@@ -4,7 +4,6 @@
 Never writes into a live server. Stop SA-MP before copying inspected files.
 """
 import argparse
-import os
 import re
 import shutil
 import stat
@@ -14,7 +13,7 @@ from pathlib import Path, PurePosixPath
 MAX_FILE_BYTES = 256 * 1024 * 1024
 MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
 MAX_ENTRIES = 50000
-WINDOWS_RESERVED = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?$", re.I)
+WINDOWS_RESERVED = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?$", re.I)
 
 
 def check_member(info):
