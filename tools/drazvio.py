@@ -19,8 +19,8 @@ def config_values(text):
         line = raw.strip()
         if not line or line.startswith(('#', '//', ';')):
             continue
-        key, _, value = line.partition(' ')
-        values[key.lower()] = value.strip()
+        parts = line.split(None, 1)
+        values[parts[0].lower()] = parts[1].strip() if len(parts) > 1 else ''
     return values
 
 
@@ -48,7 +48,24 @@ def audit(root: Path, deploy: bool) -> int:
     if not cfg_path.is_file():
         problems.append(f'Missing config: {cfg_path.name}')
     else:
-        cfg = config_values(cfg_path.read_text(encoding='utf-8-sig', errors='replace'))
+        raw_cfg = cfg_path.read_text(encoding='utf-8-sig', errors='replace')
+        cfg = config_values(raw_cfg)
+        # Reject conflicting settings instead of silently accepting the last one.
+        # A duplicated key can accidentally re-enable RCON or expose a test server.
+        critical_keys = {
+            'gamemode0', 'plugins', 'filterscripts', 'rcon', 'rcon_password',
+            'announce', 'query', 'port', 'lanmode', 'maxplayers',
+        }
+        seen = set()
+        for raw_line in raw_cfg.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith(('#', '//', ';')):
+                continue
+            key = line.split(None, 1)[0].lower()
+            if key in critical_keys:
+                if key in seen:
+                    problems.append(f'Duplicate config key: {key}')
+                seen.add(key)
         if cfg.get('gamemode0', '').split()[:1] != ['mod05']:
             problems.append('gamemode0 must load mod05')
         if cfg.get('plugins', '').split() != list(PLUGINS):
