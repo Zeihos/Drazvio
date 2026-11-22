@@ -38,7 +38,7 @@ class DeployedServerAuditTests(unittest.TestCase):
         output = io.StringIO()
         with redirect_stdout(output):
             status = audit(self.root, deploy=True)
-        return status, output.getvalue()
+        return status, output.getvalue().replace('\\\\', '/')
 
     def test_deployed_server_needs_no_pawn_sources_or_compiler(self):
         result, log = self.check()
