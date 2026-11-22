@@ -27,12 +27,20 @@ def config_values(text):
 def audit(root: Path, deploy: bool) -> int:
     problems = []
     warnings = []
-    required = [root / 'gamemodes/mod05.pwn', root / 'pawno/pawncc.exe',
-                root / 'pawno/include/a_samp.inc']
-    required += [root / 'filterscripts' / (name + '.pwn') for name in SCRIPTS]
-    required += [root / 'plugins' / (name + '.dll') for name in ('sscanf','streamer')]
-    required += [root / 'filterscripts' / (name + '.amx') for name in SCRIPTS if name not in ('gatesys2', 'reklama')]
-    required += [root / 'samp-server.exe',root / 'samp-license.txt']
+    # Source checkout and distributable server have different requirements.
+    # The public test ZIP deliberately contains AMX binaries, not Pawn sources.
+    if deploy:
+        required = [root / 'gamemodes/mod05.amx']
+        required += [root / 'filterscripts' / (name + '.amx') for name in SCRIPTS]
+        required += [root / 'plugins' / (name + '.dll') for name in PLUGINS]
+    else:
+        required = [root / 'gamemodes/mod05.pwn', root / 'pawno/pawncc.exe',
+                    root / 'pawno/include/a_samp.inc']
+        required += [root / 'filterscripts' / (name + '.pwn') for name in SCRIPTS]
+        required += [root / 'plugins' / (name + '.dll') for name in ('sscanf', 'streamer')]
+        required += [root / 'filterscripts' / (name + '.amx') for name in SCRIPTS
+                     if name not in ('gatesys2', 'reklama')]
+    required += [root / 'samp-server.exe', root / 'samp-license.txt']
     for file in required:
         if not file.is_file() or file.stat().st_size == 0:
             problems.append(f'Missing or empty: {file.relative_to(root)}')
@@ -56,8 +64,6 @@ def audit(root: Path, deploy: bool) -> int:
         if cfg.get('announce') == '1' and not deploy:
             warnings.append('Template announces server publicly; use announce 0 before tests')
     ff = root / 'plugins/FileFunctions.dll'
-    if deploy and not ff.is_file():
-        problems.append('FileFunctions.dll missing; download the tested CI artifact first')
     if ff.is_file():
         binary = ff.read_bytes().upper()
         if b'MSVCR100D.DLL' in binary:
@@ -106,7 +112,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('action', choices=['check', 'init'])
     p.add_argument('--root', default='server')
-    p.add_argument('--deploy', action='store_true', help='Validate real server.cfg and fail on debug CRT')
+    p.add_argument('--deploy', action='store_true', help='Check a deployed AMX-only server (not a Pawn source checkout)')
     args = p.parse_args()
     root = Path(args.root).resolve()
     try:
