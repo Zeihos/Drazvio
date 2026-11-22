@@ -65,12 +65,12 @@ class AccountRecoveryIntegrationTests(unittest.TestCase):
         player = self.players / "Test.ini"
         player.write_bytes(b"Money=100\r\n")
         self.quiet(backup, self.server, self.archive)
-        with zipfile.ZipFile(self.archive) as archive:
-            info = archive.getinfo("scriptfiles/players/Test.ini")
-            raw = bytearray(self.archive.read_bytes())
-            # Corrupt the entry's compressed data (not its directory or header).
-            offset = info.header_offset + 30 + len(info.filename.encode()) + len(info.extra)
-        raw[offset] ^= 0x01
+        raw = bytearray(self.archive.read_bytes())
+        # Deterministically damage the stored CRC32 in the central directory.
+        # ZIP data stays parseable, but testzip() must fail integrity validation.
+        central = raw.find(b"PK\\x01\\x02")
+        self.assertGreaterEqual(central, 0)
+        raw[central + 16] ^= 0x01
         self.archive.write_bytes(raw)
         with self.assertRaises((ValueError, zipfile.BadZipFile, RuntimeError, EOFError, OSError)):
             self.quiet(restore, self.archive, self.restored)
