@@ -5,12 +5,14 @@ on:
       - 'native/filefunctions_compat/**'
       - 'server/**'
       - 'tools/**'
+      - 'tests/**'
       - '.github/workflows/filefunctions-compat.yml'
   pull_request:
     paths:
       - 'native/filefunctions_compat/**'
       - 'server/**'
       - 'tools/**'
+      - 'tests/**'
       - '.github/workflows/filefunctions-compat.yml'
   workflow_dispatch:
 permissions:
