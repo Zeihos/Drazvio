@@ -68,7 +68,7 @@ class AccountRecoveryIntegrationTests(unittest.TestCase):
         raw = bytearray(self.archive.read_bytes())
         # Deterministically damage the stored CRC32 in the central directory.
         # ZIP data stays parseable, but testzip() must fail integrity validation.
-        central = raw.find(b"PK\\x01\\x02")
+        central = raw.find(b"PK\x01\x02")
         self.assertGreaterEqual(central, 0)
         raw[central + 16] ^= 0x01
         self.archive.write_bytes(raw)
