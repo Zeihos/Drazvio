@@ -5,7 +5,10 @@ import secrets
 import sys
 from pathlib import Path
 
-from tools.verify_package import PE_BINARIES, validate_x86_pe
+if __package__:
+    from .verify_package import PE_BINARIES, validate_x86_pe
+else:
+    from verify_package import PE_BINARIES, validate_x86_pe
 
 SCRIPTS = (
     'BonusSys', 'elevator2', 'Garage', 'gatesys2', 'island',
