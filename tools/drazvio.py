@@ -5,6 +5,8 @@ import secrets
 import sys
 from pathlib import Path
 
+from tools.verify_package import PE_BINARIES, validate_x86_pe
+
 SCRIPTS = (
     'BonusSys', 'elevator2', 'Garage', 'gatesys2', 'island',
     'keyscan', 'MPSys', 'myobj', 'reklama', 'gps', 'radio3',
@@ -80,15 +82,22 @@ def audit(root: Path, deploy: bool) -> int:
             problems.append('RCON password is missing, templated, or too short')
         if cfg.get('announce') == '1' and not deploy:
             warnings.append('Template announces server publicly; use announce 0 before tests')
-    ff = root / 'plugins/FileFunctions.dll'
-    if ff.is_file():
-        binary = ff.read_bytes().upper()
-        if b'MSVCR100D.DLL' in binary:
-            msg = ('FileFunctions.dll imports MSVCR100D.dll (Visual C++ DEBUG runtime); '
-                   'replace with a release-built, compatible DLL before deployment')
-            (problems if deploy else warnings).append(msg)
-    if not deploy and not ff.is_file():
-        warnings.append('FileFunctions.dll is compiled by GitHub Actions; not tracked in source')
+    if deploy:
+        for filename in PE_BINARIES:
+            executable = root / filename
+            if executable.is_file():
+                try:
+                    validate_x86_pe(executable.read_bytes(), filename)
+                except ValueError as exc:
+                    problems.append(str(exc))
+    else:
+        ff = root / 'plugins/FileFunctions.dll'
+        if ff.is_file():
+            binary = ff.read_bytes().upper()
+            if b'MSVCR100D.DLL' in binary:
+                warnings.append('FileFunctions.dll imports MSVCR100D.dll (debug CRT)')
+        else:
+            warnings.append('FileFunctions.dll is compiled by GitHub Actions; not tracked in source')
     for issue in warnings:
         print('WARNING:', issue)
     for issue in problems:
