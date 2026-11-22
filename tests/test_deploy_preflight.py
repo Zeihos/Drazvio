@@ -6,6 +6,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from tools.drazvio import PLACEHOLDER, PLUGINS, SCRIPTS, audit
+from tests.test_package_pe_binaries import synthetic_pe
 
 
 class DeployedServerAuditTests(unittest.TestCase):
@@ -13,13 +14,13 @@ class DeployedServerAuditTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self._file("samp-server.exe")
+        self._file("samp-server.exe", synthetic_pe())
         self._file("samp-license.txt")
         self._file("gamemodes/mod05.amx")
         for script in SCRIPTS:
             self._file(f"filterscripts/{script}.amx")
         for plugin in PLUGINS:
-            self._file(f"plugins/{plugin}.dll")
+            self._file(f"plugins/{plugin}.dll", synthetic_pe())
         self._file("server.cfg", (
             "gamemode0 mod05 1\n"
             "plugins " + " ".join(PLUGINS) + "\n"
@@ -64,10 +65,29 @@ class DeployedServerAuditTests(unittest.TestCase):
         self.assertIn("plugins/FileFunctions.dll", log)
 
     def test_debug_runtime_dependency_is_error(self):
-        self._file("plugins/FileFunctions.dll", b"MZ....MSVCR100D.DLL")
+        self._file("plugins/FileFunctions.dll", synthetic_pe(tail=b"MSVCR100D.DLL"))
         result, log = self.check()
         self.assertEqual(result, 1)
-        self.assertIn("MSVCR100D.dll", log)
+        self.assertIn("MSVCR100D.DLL", log)
+
+    def test_rejects_x64_server_executable(self):
+        self._file("samp-server.exe", synthetic_pe(machine=0x8664, magic=0x20B))
+        result, log = self.check()
+        self.assertEqual(result, 1)
+        self.assertIn("samp-server.exe", log)
+        self.assertIn("x86", log)
+
+    def test_rejects_invalid_streamer_dll(self):
+        self._file("plugins/streamer.dll", b"not a PE file")
+        result, log = self.check()
+        self.assertEqual(result, 1)
+        self.assertIn("plugins/streamer.dll", log)
+
+    def test_rejects_debug_runtime_in_sscanf_dll(self):
+        self._file("plugins/sscanf.dll", synthetic_pe(tail=b"MSVCP100D.DLL"))
+        result, log = self.check()
+        self.assertEqual(result, 1)
+        self.assertIn("MSVCP100D.DLL", log)
 
     def test_duplicate_critical_option_is_error(self):
         config = self.root / "server.cfg"
