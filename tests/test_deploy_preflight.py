@@ -72,7 +72,7 @@ class DeployedServerAuditTests(unittest.TestCase):
     def test_duplicate_critical_option_is_error(self):
         config = self.root / "server.cfg"
         with config.open("a", encoding="utf-8") as output:
-            output.write("rcon 1\\n")
+            output.write("rcon 1\n")
         result, log = self.check()
         self.assertEqual(result, 1)
         self.assertIn("Duplicate config key: rcon", log)
@@ -80,7 +80,7 @@ class DeployedServerAuditTests(unittest.TestCase):
     def test_duplicate_critical_option_case_insensitive(self):
         config = self.root / "server.cfg"
         with config.open("a", encoding="utf-8") as output:
-            output.write("PLUGINs FileFunctions\\n")
+            output.write("PLUGINs FileFunctions\n")
         result, log = self.check()
         self.assertEqual(result, 1)
         self.assertIn("Duplicate config key: plugins", log)
@@ -88,8 +88,8 @@ class DeployedServerAuditTests(unittest.TestCase):
     def test_tab_separated_config_options(self):
         config = self.root / "server.cfg"
         content = config.read_text(encoding="utf-8")
-        config.write_text(content.replace("plugins ", "plugins\\t")
-                          .replace("gamemode0 ", "gamemode0\\t"), encoding="utf-8")
+        config.write_text(content.replace("plugins ", "plugins\t")
+                          .replace("gamemode0 ", "gamemode0\t"), encoding="utf-8")
         result, log = self.check()
         self.assertEqual(result, 0, log)
 
