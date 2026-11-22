@@ -43,6 +43,9 @@ try {
         'lagcompmode 1'
     )
     [System.IO.File]::WriteAllLines((Join-Path $server 'server.cfg'),$config)
+    # Validate the actual extracted distributable before starting SA-MP.
+    & python (Join-Path $root 'tools/drazvio.py') check --root $server --deploy
+    if ($LASTEXITCODE -ne 0) { throw 'AMX-only deployment preflight failed' }
     $stdout = Join-Path $base 'stdout.txt'
     $stderr = Join-Path $base 'stderr.txt'
     $proc = Start-Process -FilePath (Join-Path $server 'samp-server.exe') -WorkingDirectory $server -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
